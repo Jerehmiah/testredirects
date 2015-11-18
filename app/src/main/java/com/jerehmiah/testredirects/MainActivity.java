@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.webkit.WebView;
+import android.widget.Toast;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -18,6 +19,8 @@ import java.net.HttpURLConnection;
 public class MainActivity extends Activity {
 
     private WebView wv;
+
+    private boolean redirectedFlag = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,7 +38,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-
+        redirectedFlag = false;
         wv = (WebView) findViewById(R.id.webView);
         loadPage("http://10.184.188.180:4567/302me");
     }
@@ -67,6 +70,14 @@ public class MainActivity extends Activity {
         StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
+                Toast toast;
+                if(redirectedFlag){
+                    toast = Toast.makeText(MainActivity.this, "The redirect happened, success!", Toast.LENGTH_SHORT);
+                }else {
+                    toast = Toast.makeText(MainActivity.this, "The redirect did not happen, failure!", Toast.LENGTH_SHORT);
+                }
+                toast.show();
+
                 wv.loadDataWithBaseURL(url,response, "text/html", "UTF-8", null);
             }
         }, new Response.ErrorListener(){
@@ -74,6 +85,7 @@ public class MainActivity extends Activity {
             @Override
             public void onErrorResponse(VolleyError error) {
                 if(error.networkResponse.statusCode == HttpURLConnection.HTTP_SEE_OTHER || error.networkResponse.statusCode == HttpURLConnection.HTTP_MOVED_TEMP) {
+                    redirectedFlag = true;
                     loadPage(error.networkResponse.headers.get("Location"));
                 }
 
