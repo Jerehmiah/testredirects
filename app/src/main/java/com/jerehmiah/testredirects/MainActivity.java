@@ -6,6 +6,15 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.webkit.WebView;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
+
+import java.net.HttpURLConnection;
+
 public class MainActivity extends Activity {
 
     private WebView wv;
@@ -26,8 +35,9 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+
         wv = (WebView) findViewById(R.id.webView);
-        wv.loadUrl("http://10.184.188.171:4567/302me");
+        loadPage("http://10.184.188.180:4567/302me");
     }
 
     @Override
@@ -43,5 +53,34 @@ public class MainActivity extends Activity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+
+    private void loadPage(final String url){
+        RequestQueue queue = Volley.newRequestQueue(this);
+
+        // Disable redirects to track last loaded URL for resolving local URLs in HTML content.
+        // This would appear to be the setting which is no longer honored in marshmallow
+        HttpURLConnection.setFollowRedirects(false);
+
+
+        StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                wv.loadDataWithBaseURL(url,response, "text/html", "UTF-8", null);
+            }
+        }, new Response.ErrorListener(){
+
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                if(error.networkResponse.statusCode == HttpURLConnection.HTTP_SEE_OTHER || error.networkResponse.statusCode == HttpURLConnection.HTTP_MOVED_TEMP) {
+                    loadPage(error.networkResponse.headers.get("Location"));
+                }
+
+            }
+        });
+        queue.add(request);
+
+
     }
 }
